@@ -7,4 +7,4 @@
 </tr>
 </table>
 </form>
-
+<?php echo link_to("戻る", "plugin/list?type=auth") ?>

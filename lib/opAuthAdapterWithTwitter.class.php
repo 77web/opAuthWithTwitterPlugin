@@ -9,126 +9,90 @@
  */
 
 /**
- * opAuthAdapterGoogleApps will handle authentication for OpenPNE by GoogleApps's OpenID
+ * opAuthAdapterWithTwitter will handle authentication for OpenPNE by Twitter OAuth
  *
  * @package    OpenPNE
  * @subpackage user
  * @author     Mamoru Tejima <tejima@tejimaya.com>
+ * @author     Hiroya <hiroyaxxx@gmail.com>
  */
 class opAuthAdapterWithTwitter extends opAuthAdapter
 {
   protected
     $authModuleName = 'WithTwitter',
-    $consumer = null,
-    $response = null;
+    $consumerKey = null,
+    $consumerSecret = null,
+    $urlCallback = null,
+    $urlApiRoot = null,
+    $urlAuthorize = null,
+    $urlAuthenticate = null;
 
   public function configure()
   {
+    $this->consumerKey = $this->getAuthConfig('awt_consumer');
+    $this->consumerSecret = $this->getAuthConfig('awt_secret');
+    $this->urlCallback = $this->getRequest()->getUri();
+    $this->urlApiRoot = "http://api.twitter.com/";
+    $this->urlAuthorize = "https://twitter.com/oauth/authorize?oauth_token=";
+    $this->urlAuthenticate = "http://twitter.com/oauth/authenticate?oauth_token=";
   }
 
-  public function getConsumer()
-  {
-    if (!$this->consumer)
-    {
-      //$this->consumer = OpenPNEOAuth::getInstance('https://twitter.com/',$app['all']['twipne_config']['consumer_key'],$app['all']['twipne_config']['consumer_secret'])->consumer;
-      
-    }
-    return $this->consumer;
-  }
-
-  public function getResponse()
-  {
-    if (!$this->response)
-    {
-      //todo complete がないので代わりのものを。よくわかっていない。
-      $response = $this->getConsumer()->complete($this->getCurrentUrl());
-      if ($response->status === Auth_OpenID_SUCCESS)
-      {
-        $this->response = $response;
-        $sreg = new Auth_OpenID_SRegResponse();
-        $obj = $sreg->fromSuccessResponse($response);
-        $data = $obj->contents();
-      }
-    }
-
-    return $this->response;
-  }
-
-  public function getAuthParameters()
-  {
-    $params = parent::getAuthParameters();
-    $openid = null;
-
-    if (sfContext::getInstance()->getRequest()->hasParameter('openid_mode'))
-    {
-      if ($this->getResponse())
-      {
-        $openid = $this->getResponse()->getDisplayIdentifier();
-      }
-    }
-
-    $params['openid'] = $openid;
-
-    return $params;
-  }
 
   public function authenticate()
   {
     $result = parent::authenticate();
-    //Twitterからのコールバック
-    if(isset($_GET['oauth_token'])&&isset($_GET['oauth_verifier'])){
-      error_log("authenticateDouble::"."\n",3,'/tmp/aaaaa');
-      $instance =  OpenPNEOAuth::getInstance('http://twitter.com/',  Doctrine::getTable('SnsConfig')->get('awt_consumer'),  Doctrine::getTable('SnsConfig')->get('awt_secret'));
-      $token = $instance->getAccessToken($_GET['oauth_token'], $_GET['oauth_verifier']);
-      print_r($token);
-      //phpinfo();    $member = $this->getUser()->getMember();
-      error_log("p:". print_r($token,true)."\n",3,'/tmp/aaaaa');
-      if($token['screen_name']){
-        $line = Doctrine::getTable('MemberConfig')->findOneByNameAndValue("twitter_user_id",$token['user_id']);
-        if($line){
-          $result = $line->member_id;
-        } else {
-          $member = new Member();
-          $member->setName("tmp");
-          $member->setIsActive(true);
-          $member->save();
-          
-          $member->setConfig('pc_address', $token['screen_name'] . "@twitter.com");
-          $member->setConfig('twitter_user_id', $token['user_id']);
-          $member->setConfig('twitter_oauth_token',$token['oauth_token']);
-          $member->setConfig('twitter_screen_name', $token['screen_name']);
-          $member->setConfig('twitter_oauth_token_secret',$token['oauth_token_secret']);
-          $result = $member->getId();
+
+    // Callback from Twitter
+    $callbackToken    = $this->getRequest()->getParameter('oauth_token');
+    $callbackVerifier = $this->getRequest()->getParameter('oauth_verifier');
+
+    if ($callbackToken && $callbackVerifier)
+    {
+      // Get user access tokens out of the session.
+      $accessToken = sfContext::getInstance()->getUser()->getAttribute('accessToken');
+      if (0 == strcmp($callbackToken, $accessToken['oauth_token']))
+      {
+        $instance = OpenPNEOAuth::getInstance($this->urlApiRoot, $this->consumerKey, $this->consumerSecret);
+        $newToken = $instance->getAccessToken($callbackToken, $callbackVerifier);
+        $twitterUserId = $newToken['user_id'];
+        $twitterScreenName = $newToken['screen_name'];
+        $twitterAccessToken = $newToken['oauth_token'];
+        $twitterTokenSecret = $newToken['oauth_token_secret'];
+
+        $line = Doctrine::getTable('MemberConfig')->findOneByNameAndValue("twitter_user_id", $twitterUserId);
+        if ($line)
+        {
+          // 登録済み
+          $member_id = (int)($line->member_id);
+          $member = Doctrine::getTable('Member')->find($member_id);
         }
-        return $result;
-      }else{
-        header("Location: http://yahoo.com");
-        exit;
+        else
+        {
+          // 新規登録
+          $member = Doctrine::getTable('Member')->createPre();
+          $member->setConfig('twitter_user_id', $twitterUserId);
+        }
+        $member->setConfig('twitter_screen_name', $twitterScreenName);
+        $member->setConfig('twitter_oauth_token', $twitterAccessToken);
+        $member->setConfig('twitter_oauth_token_secret', $twitterTokenSecret);
+        $member->setName($twitterScreenName);
+        $member->setIsActive(true);
+        $member->save();
+        $result = $member->getId();
       }
+
+      return $result;
     }
-
     //コールバックでは無く、最初にログインボタン押されたらこちら
-    $client = OpenPNEOAuth::getInstance('http://twitter.com/',Doctrine::getTable('SnsConfig')->get('awt_consumer'), Doctrine::getTable('SnsConfig')->get('awt_secret'));
-    $token = $client->getRequestToken( $this->getCurrentUrl());
+    $instance = OpenPNEOAuth::getInstance($this->urlApiRoot, $this->consumerKey, $this->consumerSecret);
+    $requestToken = $instance->getRequestToken($this->urlCallback);
 
-    error_log("getCurrentUrl()".$this->getCurrentUrl()."\n",3,'/tmp/aaaaa');
-
-    //awt_host は Twitter認証ごもどってきてもらいたいURL。
-    //$token = $client->getRequestToken("http://www.tejimaya.com");
-    error_log("p:". print_r($token,true)."\n",3,'/tmp/aaaaa');
-    error_log("getAuthorizeUrl():".OpenPNEOAuth::getInstance()->getAuthorizeUrl($token)."\n",3,'/tmp/aaaaa');
-    error_log("awt_consumer:".Doctrine::getTable('SnsConfig')->get('awt_consumer')."\n",3,'/tmp/aaaaa');
-    error_log("awt_secret:".Doctrine::getTable('SnsConfig')->get('awt_secret')."\n",3,'/tmp/aaaaa');
-    error_log("awt_host:".Doctrine::getTable('SnsConfig')->get('awt_host')."\n",3,'/tmp/aaaaa');
-    //header('Location: '.OpenPNEOAuth::getInstance()->getAuthorizeUrl($token)); // 認可用 URL を取得し、リダイレクト
-    header('Location: ' . 'http://twitter.com/oauth/authenticate?oauth_token='.$token['oauth_token']);
+    // Set user access tokens out of the session.
+    sfContext::getInstance()->getUser()->setAttribute('accessToken', $requestToken);
+    header('Location: '.$this->urlAuthorize.$requestToken['oauth_token']);
     exit;
   }
 
-  public function getCurrentUrl()
-  {
-    return sfContext::getInstance()->getRequest()->getUri();
-  }
 
   public function registerData($memberId, $form)
   {
@@ -141,6 +105,7 @@ class opAuthAdapterWithTwitter extends opAuthAdapter
     $member->setIsActive(true);
     return $member->save();
   }
+
 
   public function isRegisterBegin($member_id = null)
   {
@@ -161,25 +126,4 @@ class opAuthAdapterWithTwitter extends opAuthAdapter
     return false;
   }
 
-  protected function appendMemberInformationFromProvider($member)
-  {
-    $ax = Auth_OpenID_AX_FetchResponse::fromSuccessResponse($this->getResponse());
-    if ($ax)
-    {
-      $axExchange = new opOpenIDProfileExchange('ax', $member);
-      $axExchange->setData($ax->data);
-      error_log(print_r($ax->data,true), 3, "/tmp/php/log.txt"); 
-    }else{
-      error_log("no ax.\n", 3, "/tmp/php/log.txt"); 
-    }
-
-    $sreg = Auth_OpenID_SRegResponse::fromSuccessResponse($this->getResponse());
-    if ($sreg)
-    {
-      $sregExchange = new opOpenIDProfileExchange('sreg', $member);
-      $sregExchange->setData($sreg->contents());
-    }
-
-    return $member;
-  }
 }

@@ -14,7 +14,21 @@
  * @package    OpenPNE
  * @subpackage form
  * @author     Mamoru Tejima <tejima@tejimaya.com>
+ * @author     Hiroya <hiroyaxxx@gmail.com>
  */
 class opAuthConfigFormWithTwitter extends opAuthConfigForm
 {
+
+  public function setup()
+  {
+    opAuthConfigForm::setup();
+    if ($w = $this->getWidget('awt_consumer'))
+    {
+      $w->setAttribute('size', 60);
+    }
+    if ($w = $this->getWidget('awt_secret'))
+    {
+      $w->setAttribute('size', 60);
+    }
+  }
 }

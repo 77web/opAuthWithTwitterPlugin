@@ -19,22 +19,7 @@ class opAuthLoginFormWithTwitter extends opAuthLoginForm
 {
   public function configure()
   {
-
+    $this->setOption('is_use_remember_me', false);
     parent::configure();
-  }
-
-  public function validate($validator, $values, $arguments = array())
-  {
-    return $result;
-  }
-
-  public function getRedirectHtml()
-  {
-    return $this->getValue('redirect_html');
-  }
-
-  public function getRedirectUrl()
-  {
-    return $this->getValue('redirect_url');
   }
 }

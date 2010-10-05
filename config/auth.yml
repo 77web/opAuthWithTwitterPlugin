@@ -1,33 +1,39 @@
 enable_mobile:
+  IsConfig:   false
   Default: 0
 
 enable_pc:
+  IsConfig:   false
   Default: 1
 
 admin_invite:
   Default:  false
+
+invite_mode:
+  Default:  false
+
 awt_consumer:
   Name:     "awt_consumer"
-  Caption:  "awt_consumer"
+  Caption:  "Consumer key"
   FormType: "input"
   ValueType: "text"
   IsConfig:   true
   IsRequired: true
   Default:    ""
+
 awt_secret:
   Name:     "awt_secret"
-  Caption:  "awt_secret"
+  Caption:  "Consumer secret"
   FormType: "input"
   ValueType: "text"
   IsConfig:   true
   IsRequired: true
   Default:    ""
+
 awt_host:
   Name:     "awt_host"
   Caption:  "awt_host"
   FormType: "input"
   ValueType: "text"
-  IsConfig:   true
-  IsRequired: true
+  IsConfig:   false
   Default:    ""
-
