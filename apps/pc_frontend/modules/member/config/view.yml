@@ -1,0 +1,7 @@
+loginSuccess:
+  customize:
+    twitter_logo:
+      template: [opAuthWithTwitterPlugin, twitterLogo]
+      is_component: false
+      parts   : [WithTwitterLogin]
+      target  : [top]

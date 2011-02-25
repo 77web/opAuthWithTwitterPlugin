@@ -1,0 +1,1 @@
+<?php echo image_tag('/opAuthWithTwitterPlugin/img/twitter_logo.gif', array('alt'=>__('Login with Twitter'))); ?>
