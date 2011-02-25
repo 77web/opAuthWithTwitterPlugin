@@ -80,7 +80,13 @@ class opAuthAdapterWithTwitter extends opAuthAdapter
         $member->save();
         $result = $member->getId();
       }
-
+      $uri = sfContext::getInstance()->getUser()->getAttribute('next_uri');
+      
+      if($uri)
+      {
+        sfContext::getInstance()->getUser()->setAttribute('next_uri', null);
+        $this->getAuthForm()->setNextUri($uri);
+      }
       return $result;
     }
     //コールバックでは無く、最初にログインボタン押されたらこちら
@@ -89,7 +95,11 @@ class opAuthAdapterWithTwitter extends opAuthAdapter
 
     // Set user access tokens out of the session.
     sfContext::getInstance()->getUser()->setAttribute('accessToken', $requestToken);
+    // Set current URI
+    sfContext::getInstance()->getUser()->setAttribute('next_uri', $this->getAuthForm()->getValue('next_uri'));
+
     header('Location: '.$this->urlAuthorize.$requestToken['oauth_token']);
+
     exit;
   }
 

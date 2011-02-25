@@ -22,4 +22,9 @@ class opAuthLoginFormWithTwitter extends opAuthLoginForm
     $this->setOption('is_use_remember_me', false);
     parent::configure();
   }
+  
+  public function setNextUri($uri)
+  {
+    $this->values['next_uri'] = $uri;
+  }
 }
