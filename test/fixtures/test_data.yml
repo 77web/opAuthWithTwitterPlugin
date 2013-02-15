@@ -3,6 +3,10 @@ Member:
     id: ~
     name: "OpenPNE君"
     is_active: 1
+  member_2:
+    id: 2
+    name: "Twitter登録者"
+    is_active: 1
 
 MemberConfig:
   member_address_1:
@@ -17,3 +21,20 @@ MemberConfig:
     name: "password"
     value: "<?php echo md5('password') ?>"
     Member: member_1
+  member2_twitter_id:
+    name: "twitter_user_id"
+    value: "12345"
+    Member: member_2
+
+Plugin:
+  opAuthWithTwitterPlugin_enable:
+    name: opAuthWithTwitterPlugin
+    is_enabled: true
+  opAuthMailAddressPlugin_enable:
+    name: opAuthMailAddressPlugin:
+    is_enabled: true
+
+SnsConfig:
+  sns_name_config:
+    name: sns_name
+    value: MySNS
