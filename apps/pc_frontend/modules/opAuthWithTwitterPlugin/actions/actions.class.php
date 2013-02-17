@@ -15,7 +15,7 @@ class opAuthWithTwitterPluginActions extends sfActions
     {
       return $this->redirect('member/delete');
     }
-    $this->form = new sfForm();
+    $this->form = new BaseForm();
     
     if ($request->isMethod(sfRequest::POST))
     {
