@@ -19,17 +19,15 @@ class opAuthWithTwitterPluginActions extends sfActions
     
     if ($request->isMethod(sfRequest::POST))
     {
-      $this->form->bind($request);
-      if ($this->form->isValid())
-      {
-        $member = $this->getUser()->getMember();
-        $member->delete();
-        //$this->sendDeleteAccountMail($member);
-        $this->getUser()->setFlash('notice', '‘Þ‰ï‚ªŠ®—¹‚µ‚Ü‚µ‚½');
-        $this->getUser()->logout();
-        
-        return $this->redirect('member/login');
-      }
+      $request->checkCSRFProtection();
+      
+      $member = $this->getUser()->getMember();
+      $member->delete();
+      //$this->sendDeleteAccountMail($member);
+      $this->getUser()->setFlash('notice', '‘Þ‰ï‚ªŠ®—¹‚µ‚Ü‚µ‚½');
+      $this->getUser()->logout();
+      
+      return $this->redirect('member/login');
     }
     
     return sfView::INPUT;
