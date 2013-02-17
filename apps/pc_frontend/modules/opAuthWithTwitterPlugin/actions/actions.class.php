@@ -24,7 +24,7 @@ class opAuthWithTwitterPluginActions extends sfActions
       $member = $this->getUser()->getMember();
       $member->delete();
       //$this->sendDeleteAccountMail($member);
-      $this->getUser()->setFlash('notice', '‘Þ‰ï‚ªŠ®—¹‚µ‚Ü‚µ‚½');
+      $this->getUser()->setFlash('notice', 'é€€ä¼šãŒå®Œäº†ã—ã¾ã—ãŸ');
       $this->getUser()->logout();
       
       return $this->redirect('member/login');
